@@ -32,6 +32,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { GlossaryTerm } from '../../generated/entity/data/glossaryTerm';
 import { getGlossaryPath } from '../../utils/RouterUtils';
+import {
+  NoFilteredResultsPlaceholder,
+  NoSearchResultsPlaceholder,
+} from '../common/EmptyPlaceholder';
 import { useGenericContext } from '../Customization/GenericProvider/GenericContext';
 import { buildOntologySlideoutEntityDetails } from './buildOntologySlideoutEntityDetails';
 import ExportGraphPanel from './ExportGraphPanel';
@@ -287,22 +291,34 @@ const OntologyExplorer: React.FC<OntologyExplorerProps> = ({
     if (hasNoVisibleNodes && !loading && graphDataToShow !== null) {
       if (hasRelationFilter) {
         return (
-          <GraphEmptyState
-            message={t('message.no-relations-for-selected-filter')}
-            testId="ontology-graph-no-relations"
+          <NoFilteredResultsPlaceholder
+            data-testid="ontology-graph-no-relations"
+            onClearFilters={() =>
+              setFilters((prev) => ({
+                ...prev,
+                relationTypes: DEFAULT_FILTERS.relationTypes,
+              }))
+            }
           />
         );
       }
 
-      const hasActiveFilter =
-        withoutOntologyAutocompleteAll(filters.glossaryIds).length > 0 ||
-        filters.searchQuery.trim().length > 0;
-
-      if (hasActiveFilter) {
+      if (filters.searchQuery.trim().length > 0) {
         return (
-          <GraphEmptyState
-            message={t('message.no-data-available-for-selected-filter')}
-            testId="ontology-graph-empty"
+          <NoSearchResultsPlaceholder data-testid="ontology-graph-no-search-results" />
+        );
+      }
+
+      if (withoutOntologyAutocompleteAll(filters.glossaryIds).length > 0) {
+        return (
+          <NoFilteredResultsPlaceholder
+            data-testid="ontology-graph-no-filter-results"
+            onClearFilters={() =>
+              setFilters((prev) => ({
+                ...prev,
+                glossaryIds: DEFAULT_FILTERS.glossaryIds,
+              }))
+            }
           />
         );
       }
@@ -325,9 +341,14 @@ const OntologyExplorer: React.FC<OntologyExplorerProps> = ({
 
     if (hasNoMatchingRelationEdges && !loading) {
       return (
-        <GraphEmptyState
-          message={t('message.no-relations-for-selected-filter')}
-          testId="ontology-graph-no-relations"
+        <NoFilteredResultsPlaceholder
+          data-testid="ontology-graph-no-relations"
+          onClearFilters={() =>
+            setFilters((prev) => ({
+              ...prev,
+              relationTypes: DEFAULT_FILTERS.relationTypes,
+            }))
+          }
         />
       );
     }
