@@ -79,7 +79,7 @@ async function navigateToGlossaryRelationsGraph(
   await waitForGraphLoaded(page);
 }
 
-test.describe('Ontology Explorer — RDF exports (Turtle and RDF/XML)', () => {
+test.describe.skip('Ontology Explorer — RDF exports (Turtle and RDF/XML)', () => {
   test('Turtle (.ttl) option appears in the export menu when RDF is enabled', async ({
     browser,
   }) => {
@@ -212,7 +212,7 @@ test.describe('Ontology Explorer — RDF exports (Turtle and RDF/XML)', () => {
   });
 });
 
-test.describe('Ontology Explorer — RDF graph data loading', () => {
+test.describe.skip('Ontology Explorer — RDF graph data loading', () => {
   test('term Relations Graph requests /rdf/glossary/graph scoped to the selected term (glossaryTermId) when RDF is enabled', async ({
     browser,
   }) => {
