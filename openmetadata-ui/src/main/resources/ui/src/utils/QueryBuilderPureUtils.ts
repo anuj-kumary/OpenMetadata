@@ -775,14 +775,19 @@ export const getEntityTypeAggregationFilter = (
       qFilter.query?.bool?.must as QueryFieldInterface[]
     )[0];
     if (firstMustBlock?.bool?.must) {
-      const entityTypes = Array.isArray(entityType) ? entityType : [entityType];
-      entityTypes.forEach((type) => {
-        (firstMustBlock?.bool?.must as QueryFieldInterface[])?.push({
-          term: {
-            'entityType.keyword': type,
-          },
-        });
-      });
+      const entityTypes = (
+        Array.isArray(entityType) ? entityType : [entityType]
+      ).filter((t) => t !== EntityType.ALL);
+
+      if (entityTypes.length === 0) {
+        return qFilter;
+      }
+
+      (firstMustBlock.bool.must as QueryFieldInterface[]).push(
+        entityTypes.length === 1
+          ? { term: { 'entityType.keyword': entityTypes[0] } }
+          : { terms: { 'entityType.keyword': entityTypes } }
+      );
     }
   }
 
