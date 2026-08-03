@@ -314,38 +314,43 @@ export const fillRule = async (
         '.widget--widget input[role="combobox"]'
       );
 
-      const aggregateRes2 = page.waitForResponse(
-        `/api/v1/search/aggregate?*${getEncodedFqn(
-          escapeESReservedCharacters(searchData)
-        )}*`
-      );
-
-      await dropdownInput.fill(searchData);
-
-      await aggregateRes2;
-
-      const dropdown = page.locator('[role="listbox"]:visible');
-      const exactMatch = dropdown
-        .getByRole('option', {
-          name: new RegExp(`^${escapeRegex(searchData)}$`, 'i'),
-        })
-        .first();
-      const partialMatch = dropdown
-        .getByRole('option')
-        .filter({
-          hasText: new RegExp(escapeRegex(searchData), 'i'),
-        })
-        .first();
-
-      if (await exactMatch.count()) {
-        await exactMatch.click();
-      } else if (await partialMatch.count()) {
-        await partialMatch.click();
-      } else {
-        // Some suggestion backends normalize or delay option text; Enter keeps
-        // the typed criteria and avoids waiting forever on an exact match.
-        await dropdownInput.press('Enter');
-      }
+      // Re-fill on every retry to re-trigger the async search — handles ES
+      // index latency for entities (e.g. tables) that were just created.
+      // Scope the popup via aria-controls so a popup left open by a previous
+      // fillRule call never matches the wrong listbox.
+      await expect(async () => {
+        await dropdownInput.fill(searchData);
+        if ((await dropdownInput.getAttribute('aria-expanded')) !== 'true') {
+          await dropdownInput.press('ArrowDown');
+        }
+        const listboxId = await dropdownInput.getAttribute('aria-controls');
+        if (!listboxId) {
+          throw new Error(
+            'Value widget popup did not open (aria-controls not set)'
+          );
+        }
+        const listbox = page.locator(`[role="listbox"][id="${listboxId}"]`);
+        const exactMatch = listbox
+          .getByRole('option', {
+            name: new RegExp(`^${escapeRegex(searchData)}$`, 'i'),
+          })
+          .first();
+        const partialMatch = listbox
+          .getByRole('option')
+          .filter({
+            hasText: new RegExp(escapeRegex(searchData), 'i'),
+          })
+          .first();
+        if (await exactMatch.count()) {
+          await exactMatch.click({ timeout: 2000 });
+        } else if (await partialMatch.count()) {
+          await partialMatch.click({ timeout: 2000 });
+        } else {
+          throw new Error(
+            `No option matching "${searchData}" in the value listbox yet`
+          );
+        }
+      }).toPass({ timeout: 60000 });
     }
 
     await clickOutside(page);
