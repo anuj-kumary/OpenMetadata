@@ -12,7 +12,7 @@
  */
 import { expect, Locator, Page } from '@playwright/test';
 import { clickOutside } from './common';
-import { getEncodedFqn } from './entity';
+import { escapeESReservedCharacters, getEncodedFqn } from './entity';
 
 type EntityFields = {
   id: string;
@@ -314,12 +314,10 @@ export const fillRule = async (
         '.widget--widget input[role="combobox"]'
       );
 
-      // Use the raw URL-encoded search term — the backend puts the search
-      // value as a plain URL parameter. ES-escaping dashes turns them into
-      // "\-", which encodes as "%5C-" and never matches the literal "-" in
-      // the actual aggregate URL, causing waitForResponse to hang 30s.
       const aggregateRes2 = page.waitForResponse(
-        `/api/v1/search/aggregate?*${getEncodedFqn(searchData)}*`
+        `/api/v1/search/aggregate?*${getEncodedFqn(
+          escapeESReservedCharacters(searchData)
+        )}*`
       );
 
       await dropdownInput.fill(searchData);
