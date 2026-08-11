@@ -314,19 +314,39 @@ export const fillRule = async (
         '.widget--widget input[role="combobox"]'
       );
 
-      // Re-fill on every retry to re-trigger the async search — handles ES
-      // index latency for entities (e.g. tables) that were just created.
-      // Scope the popup via aria-controls so a popup left open by a previous
-      // fillRule call never matches the wrong listbox.
+      // Register the response listener before fill so a fast network can't
+      // fire the response before the listener is attached.
+      const aggregateRes = page.waitForResponse(
+        `/api/v1/search/aggregate?*${getEncodedFqn(
+          escapeESReservedCharacters(searchData)
+        )}*`
+      );
+
+      await dropdownInput.fill(searchData);
+      if ((await dropdownInput.getAttribute('aria-expanded')) !== 'true') {
+        await dropdownInput.press('ArrowDown');
+      }
+
+      // Wait for ES to return results for this search term. After this
+      // resolves, OMSelectWidget calls setItems() — React commits the update
+      // on the next render tick.
+      await aggregateRes;
+
+      // Do NOT re-fill inside the retry loop — each fill() restarts the
+      // 300ms asyncFetch debounce, preventing the API call from completing.
+      // Scope the listbox via aria-controls to avoid matching a popup left
+      // open by a prior selectOption call.
       await expect(async () => {
-        await dropdownInput.fill(searchData);
-        if ((await dropdownInput.getAttribute('aria-expanded')) !== 'true') {
-          await dropdownInput.press('ArrowDown');
-        }
         const listboxId = await dropdownInput.getAttribute('aria-controls');
         if (!listboxId) {
+          // Popup closed unexpectedly after API response. Re-open and
+          // re-search so the debounce fires again.
+          await dropdownInput.fill(searchData);
+          if ((await dropdownInput.getAttribute('aria-expanded')) !== 'true') {
+            await dropdownInput.press('ArrowDown');
+          }
           throw new Error(
-            'Value widget popup did not open (aria-controls not set)'
+            'Value widget popup closed after API response; re-searching'
           );
         }
         const listbox = page.locator(`[role="listbox"][id="${listboxId}"]`);
@@ -350,7 +370,7 @@ export const fillRule = async (
             `No option matching "${searchData}" in the value listbox yet`
           );
         }
-      }).toPass({ timeout: 60000 });
+      }).toPass({ timeout: 10000 });
     }
 
     await clickOutside(page);
