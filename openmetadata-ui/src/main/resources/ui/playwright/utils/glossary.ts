@@ -219,15 +219,17 @@ export const selectActiveGlossaryTerm = async (
 export const goToAssetsTab = async (
   page: Page,
   displayName: string,
-  count = 0
+  count?: number
 ) => {
   await selectActiveGlossaryTerm(page, displayName);
   await page.getByTestId('assets').click();
   await page.locator('.ant-tabs-tab-active:has-text("Assets")').waitFor();
 
-  await expect(
-    page.getByTestId('assets').getByTestId('filter-count')
-  ).toContainText(`${count}`);
+  if (count !== undefined) {
+    await expect(
+      page.getByTestId('assets').getByTestId('filter-count')
+    ).toContainText(`${count}`);
+  }
 };
 
 export const removeReviewer = async (

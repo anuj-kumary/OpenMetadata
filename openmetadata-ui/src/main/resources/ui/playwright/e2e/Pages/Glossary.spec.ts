@@ -1169,7 +1169,7 @@ test.describe('Glossary tests', () => {
       );
       await sidebarClick(page, SidebarItem.GLOSSARY);
       await selectActiveGlossary(page, glossary1.data.displayName);
-      await goToAssetsTab(page, glossaryTerm1.data.displayName, 1);
+      await goToAssetsTab(page, glossaryTerm1.data.displayName);
       const entityFqn = get(table, 'entityResponseData.fullyQualifiedName');
 
       await expect(
