@@ -578,7 +578,6 @@ test.describe('Curated Assets Widget', () => {
       ruleLocator2.locator('.rule--value'),
       'Incomplete'
     );
-    await ruleLocator2.locator('.rule--value input').fill('production');
 
     // Add another condition
     await page.getByRole('button', { name: 'Add Condition' }).click();
